@@ -9,11 +9,13 @@
 
 """Compress a Fast R-CNN network using truncated SVD."""
 
-import _init_paths
-import caffe
 import argparse
+import os
+import sys
+
+import caffe
 import numpy as np
-import os, sys
+
 
 def parse_args():
     """Parse input arguments."""
@@ -34,6 +36,7 @@ def parse_args():
 
     args = parser.parse_args()
     return args
+
 
 def compress_weights(W, l):
     """Compress the weight matrix W of an inner product (fully connected) layer
@@ -57,6 +60,7 @@ def compress_weights(W, l):
 
     L = np.dot(np.diag(sl), Vl)
     return Ul, L
+
 
 def main():
     args = parse_args()
@@ -87,7 +91,7 @@ def main():
         print('  compressing fc6...')
         Ul_fc6, L_fc6 = compress_weights(W_fc6, l_fc6)
 
-        assert(len(net_svd.params['fc6_L']) == 1)
+        assert (len(net_svd.params['fc6_L']) == 1)
 
         # install compressed matrix factors (and original biases)
         net_svd.params['fc6_L'][0].data[...] = L_fc6
@@ -100,7 +104,8 @@ def main():
     # Compress fc7
     if net_svd.params.has_key('fc7_L'):
         l_fc7 = net_svd.params['fc7_L'][0].data.shape[0]
-        print '  fc7_L bottleneck size: {}'.format(l_fc7)
+        print
+        '  fc7_L bottleneck size: {}'.format(l_fc7)
 
         W_fc7 = net.params['fc7'][0].data
         B_fc7 = net.params['fc7'][1].data
@@ -108,7 +113,7 @@ def main():
         print('  compressing fc7...')
         Ul_fc7, L_fc7 = compress_weights(W_fc7, l_fc7)
 
-        assert(len(net_svd.params['fc7_L']) == 1)
+        assert (len(net_svd.params['fc7_L']) == 1)
 
         net_svd.params['fc7_L'][0].data[...] = L_fc7
 
@@ -119,7 +124,9 @@ def main():
 
     filename = '{}/{}.caffemodel'.format(out_dir, out)
     net_svd.save(filename)
-    print 'Wrote svd model to: {:s}'.format(filename)
+    print
+    'Wrote svd model to: {:s}'.format(filename)
+
 
 if __name__ == '__main__':
     main()

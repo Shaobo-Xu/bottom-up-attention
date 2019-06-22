@@ -7,12 +7,12 @@
 
 """Compute minibatch blobs for training a Fast R-CNN network."""
 
+import cv2
 import numpy as np
 import numpy.random as npr
-import scipy.sparse as sparse
-import cv2
 from fast_rcnn.config import cfg
 from utils.blob import prep_im_for_blob, im_list_to_blob
+
 
 def get_minibatch(roidb, num_classes):
     """Given a roidb, construct a minibatch sampled from it."""
@@ -21,9 +21,9 @@ def get_minibatch(roidb, num_classes):
     # Sample random scales to use for each image in this batch
     random_scale_inds = npr.randint(0, high=len(cfg.TRAIN.SCALES),
                                     size=num_images)
-    assert(cfg.TRAIN.BATCH_SIZE % num_images == 0) or (cfg.TRAIN.BATCH_SIZE == -1), \
+    assert (cfg.TRAIN.BATCH_SIZE % num_images == 0) or (cfg.TRAIN.BATCH_SIZE == -1), \
         'num_images ({}) must divide BATCH_SIZE ({})'. \
-        format(num_images, cfg.TRAIN.BATCH_SIZE)
+            format(num_images, cfg.TRAIN.BATCH_SIZE)
     rois_per_image = np.inf if cfg.TRAIN.BATCH_SIZE == -1 else cfg.TRAIN.BATCH_SIZE / num_images
     fg_rois_per_image = np.round(cfg.TRAIN.FG_FRACTION * rois_per_image)
 
@@ -49,25 +49,25 @@ def get_minibatch(roidb, num_classes):
         gt_boxes[:, 0:4] = roidb[0]['boxes'][gt_inds, :] * im_scales[0]
         gt_boxes[:, 4] = roidb[0]['gt_classes'][gt_inds]
         if cfg.TRAIN.HAS_ATTRIBUTES:
-            gt_boxes[:, 5:21] = roidb[0]['gt_attributes'][gt_inds].toarray()    
+            gt_boxes[:, 5:21] = roidb[0]['gt_attributes'][gt_inds].toarray()
         if cfg.TRAIN.HAS_RELATIONS:
             assert num_gt == roidb[0]['gt_classes'].shape[0], \
-                  "Generation of gt_relations doesn't accomodate dropping objects"
-            coords = roidb[0]['gt_relations'] # i,relation,j           
+                "Generation of gt_relations doesn't accomodate dropping objects"
+            coords = roidb[0]['gt_relations']  # i,relation,j
             if coords.size > 0:
                 assert num_gt > coords.max(axis=0)[0], \
-                      "gt_relations subject index exceeds number of objects"
+                    "gt_relations subject index exceeds number of objects"
                 assert num_gt > coords.max(axis=0)[2], \
-                      "gt_relations object index exceeds number of objects"
-                np.random.shuffle(coords) # There may be multiple relations between same objects
+                    "gt_relations object index exceeds number of objects"
+                np.random.shuffle(coords)  # There may be multiple relations between same objects
                 rel_matrix = gt_boxes[:, 21:]
                 for r in range(coords.shape[0]):
-                    rel_matrix[coords[r,0],coords[r,2]] = coords[r,1]
+                    rel_matrix[coords[r, 0], coords[r, 2]] = coords[r, 1]
         blobs['gt_boxes'] = gt_boxes
         blobs['im_info'] = np.array(
             [[im_blob.shape[2], im_blob.shape[3], im_scales[0]]],
             dtype=np.float32)
-    else: # not using RPN
+    else:  # not using RPN
         # Now, build the region of interest and label blobs
         rois_blob = np.zeros((0, 5), dtype=np.float32)
         labels_blob = np.zeros((0), dtype=np.float32)
@@ -123,7 +123,7 @@ def _sample_rois(roidb, fg_rois_per_image, rois_per_image, num_classes):
     # Sample foreground regions without replacement
     if fg_inds.size > 0:
         fg_inds = npr.choice(
-                fg_inds, size=fg_rois_per_this_image, replace=False)
+            fg_inds, size=fg_rois_per_this_image, replace=False)
 
     # Select background RoIs as those within [BG_THRESH_LO, BG_THRESH_HI)
     bg_inds = np.where((overlaps < cfg.TRAIN.BG_THRESH_HI) &
@@ -136,7 +136,7 @@ def _sample_rois(roidb, fg_rois_per_image, rois_per_image, num_classes):
     # Sample foreground regions without replacement
     if bg_inds.size > 0:
         bg_inds = npr.choice(
-                bg_inds, size=bg_rois_per_this_image, replace=False)
+            bg_inds, size=bg_rois_per_this_image, replace=False)
 
     # The indices that we're selecting (both fg and bg)
     keep_inds = np.append(fg_inds, bg_inds)
@@ -148,9 +148,10 @@ def _sample_rois(roidb, fg_rois_per_image, rois_per_image, num_classes):
     rois = rois[keep_inds]
 
     bbox_targets, bbox_inside_weights = _get_bbox_regression_labels(
-            roidb['bbox_targets'][keep_inds, :], num_classes)
+        roidb['bbox_targets'][keep_inds, :], num_classes)
 
     return labels, overlaps, rois, bbox_targets, bbox_inside_weights
+
 
 def _get_image_blob(roidb, scale_inds):
     """Builds an input blob from the images in the roidb at the specified
@@ -174,10 +175,12 @@ def _get_image_blob(roidb, scale_inds):
 
     return blob, im_scales
 
+
 def _project_im_rois(im_rois, im_scale_factor):
     """Project image RoIs into the rescaled training image."""
     rois = im_rois * im_scale_factor
     return rois
+
 
 def _get_bbox_regression_labels(bbox_target_data, num_classes):
     """Bounding-box regression targets are stored in a compact form in the
@@ -228,10 +231,11 @@ def _vis_minibatch(im_blob, rois_blob, labels_blob, overlaps):
         im = im.astype(np.uint8)
         cls = labels_blob[i]
         plt.imshow(im)
-        print 'class: ', cls, ' overlap: ', overlaps[i]
+        print
+        'class: ', cls, ' overlap: ', overlaps[i]
         plt.gca().add_patch(
             plt.Rectangle((roi[0], roi[1]), roi[2] - roi[0],
                           roi[3] - roi[1], fill=False,
                           edgecolor='r', linewidth=3)
-            )
+        )
         plt.show()

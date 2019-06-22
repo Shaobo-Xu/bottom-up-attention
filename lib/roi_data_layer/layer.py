@@ -10,12 +10,14 @@
 RoIDataLayer implements a Caffe Python layer.
 """
 
+from multiprocessing import Process, Queue
+
 import caffe
-from fast_rcnn.config import cfg
-from roi_data_layer.minibatch import get_minibatch
 import numpy as np
 import yaml
-from multiprocessing import Process, Queue
+from fast_rcnn.config import cfg
+from roi_data_layer.minibatch import get_minibatch
+
 
 class RoIDataLayer(caffe.Layer):
     """Fast R-CNN data layer used for training."""
@@ -74,11 +76,14 @@ class RoIDataLayer(caffe.Layer):
                                                  self._roidb,
                                                  self._num_classes, gpu_id)
             self._prefetch_process.start()
+
             # Terminate the child process when the parent exists
             def cleanup():
-                print 'Terminating BlobFetcher'
+                print
+                'Terminating BlobFetcher'
                 self._prefetch_process.terminate()
                 self._prefetch_process.join()
+
             import atexit
             atexit.register(cleanup)
 
@@ -95,7 +100,7 @@ class RoIDataLayer(caffe.Layer):
         # data blob: holds a batch of N images, each with 3 channels
         idx = 0
         top[idx].reshape(cfg.TRAIN.IMS_PER_BATCH, 3,
-            max(cfg.TRAIN.SCALES), cfg.TRAIN.MAX_SIZE)
+                         max(cfg.TRAIN.SCALES), cfg.TRAIN.MAX_SIZE)
         self._name_to_top_map['data'] = idx
         idx += 1
 
@@ -107,7 +112,7 @@ class RoIDataLayer(caffe.Layer):
             top[idx].reshape(1, 4)
             self._name_to_top_map['gt_boxes'] = idx
             idx += 1
-        else: # not using RPN
+        else:  # not using RPN
             # rois blob: holds R regions of interest, each is a 5-tuple
             # (n, x1, y1, x2, y2) specifying an image batch index n and a
             # rectangle (x1, y1, x2, y2)
@@ -140,7 +145,8 @@ class RoIDataLayer(caffe.Layer):
                 self._name_to_top_map['bbox_outside_weights'] = idx
                 idx += 1
 
-        print 'RoiDataLayer: name_to_top:', self._name_to_top_map
+        print
+        'RoiDataLayer: name_to_top:', self._name_to_top_map
         assert len(top) == len(self._name_to_top_map)
 
     def forward(self, bottom, top):
@@ -166,8 +172,10 @@ class RoIDataLayer(caffe.Layer):
         """Reshaping happens during the call to forward."""
         pass
 
+
 class BlobFetcher(Process):
     """Experimental class for prefetching blobs in a separate process."""
+
     def __init__(self, queue, roidb, num_classes, gpu_id=0):
         super(BlobFetcher, self).__init__()
         self._queue = queue
@@ -196,7 +204,8 @@ class BlobFetcher(Process):
         return db_inds
 
     def run(self):
-        print 'BlobFetcher started'
+        print
+        'BlobFetcher started'
         while True:
             db_inds = self._get_next_minibatch_inds()
             minibatch_db = [self._roidb[i] for i in db_inds]

@@ -9,16 +9,18 @@
 
 """Generate RPN proposals."""
 
-import _init_paths
-import numpy as np
-from fast_rcnn.config import cfg, cfg_from_file, cfg_from_list, get_output_dir
-from datasets.factory import get_imdb
-from rpn.generate import imdb_proposals
+import argparse
+import os
+import pprint
+import sys
+import time
+
 import cPickle
 import caffe
-import argparse
-import pprint
-import time, os, sys
+from datasets.factory import get_imdb
+from fast_rcnn.config import cfg, cfg_from_file, cfg_from_list, get_output_dir
+from rpn.generate import imdb_proposals
+
 
 def parse_args():
     """
@@ -51,6 +53,7 @@ def parse_args():
 
     args = parser.parse_args()
     return args
+
 
 if __name__ == '__main__':
     args = parse_args()
@@ -88,4 +91,5 @@ if __name__ == '__main__':
     rpn_file = os.path.join(output_dir, net.name + '_rpn_proposals.pkl')
     with open(rpn_file, 'wb') as f:
         cPickle.dump(imdb_boxes, f, cPickle.HIGHEST_PROTOCOL)
-    print 'Wrote RPN proposals to {}'.format(rpn_file)
+    print
+    'Wrote RPN proposals to {}'.format(rpn_file)

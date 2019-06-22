@@ -7,18 +7,17 @@
 
 """Test a Fast R-CNN network on an imdb (image database)."""
 
-from fast_rcnn.config import cfg, get_output_dir
-from fast_rcnn.bbox_transform import clip_boxes, bbox_transform_inv
-import argparse
-from utils.timer import Timer
-import numpy as np
-import cv2
-import caffe
-from fast_rcnn.nms_wrapper import nms, soft_nms
-import cPickle
-from utils.blob import im_list_to_blob
 import os
-from utils.cython_bbox import bbox_overlaps
+
+import cPickle
+import cv2
+import numpy as np
+from fast_rcnn.bbox_transform import clip_boxes, bbox_transform_inv
+from fast_rcnn.config import cfg, get_output_dir
+from fast_rcnn.nms_wrapper import nms
+from utils.blob import im_list_to_blob
+from utils.timer import Timer
+
 
 def _get_image_blob(im):
     """Converts an image into a network input.
@@ -56,6 +55,7 @@ def _get_image_blob(im):
 
     return blob, np.array(im_scale_factors)
 
+
 def _get_rois_blob(im_rois, im_scale_factors):
     """Converts RoIs into network inputs.
 
@@ -69,6 +69,7 @@ def _get_rois_blob(im_rois, im_scale_factors):
     rois, levels = _project_im_rois(im_rois, im_scale_factors)
     rois_blob = np.hstack((levels, rois))
     return rois_blob.astype(np.float32, copy=False)
+
 
 def _project_im_rois(im_rois, scales):
     """Project image RoIs into the image pyramid built by _get_image_blob.
@@ -98,13 +99,15 @@ def _project_im_rois(im_rois, scales):
 
     return rois, levels
 
+
 def _get_blobs(im, rois):
     """Convert an image and RoIs within that image into network inputs."""
-    blobs = {'data' : None, 'rois' : None}
+    blobs = {'data': None, 'rois': None}
     blobs['data'], im_scale_factors = _get_image_blob(im)
     if not cfg.TEST.HAS_RPN:
         blobs['rois'] = _get_rois_blob(rois, im_scale_factors)
     return blobs, im_scale_factors
+
 
 def im_detect(net, im, boxes=None, force_boxes=False):
     """Detect object classes in an image given object proposals.
@@ -183,18 +186,19 @@ def im_detect(net, im, boxes=None, force_boxes=False):
         # Map scores and predictions back to the original set of boxes
         scores = scores[inv_index, :]
         pred_boxes = pred_boxes[inv_index, :]
-        
+
     if 'attr_prob' in net.blobs:
         attr_scores = blobs_out['attr_prob']
     else:
         attr_scores = None
-        
+
     if 'rel_prob' in net.blobs:
         rel_scores = blobs_out['rel_prob']
     else:
         rel_scores = None
 
     return scores, pred_boxes, attr_scores, rel_scores
+
 
 def vis_detections(im, class_name, dets, thresh=0.3, filename='vis.png'):
     """Visual debugging of detections."""
@@ -211,23 +215,25 @@ def vis_detections(im, class_name, dets, thresh=0.3, filename='vis.png'):
                               bbox[2] - bbox[0],
                               bbox[3] - bbox[1], fill=False,
                               edgecolor='g', linewidth=3)
-                )
+            )
     plt.title('{}  {:.3f}'.format(class_name, score))
     plt.show()
     plt.savefig('./data/vis/%s' % filename)
-    
+
+
 def vis_multiple(im, class_names, all_boxes, filename='vis.png'):
     """Visual debugging of detections."""
-    
-    print filename
+
+    print
+    filename
     import matplotlib.pyplot as plt
     im = im[:, :, (2, 1, 0)]
     plt.cla()
     plt.imshow(im)
-    
+
     max_boxes = 10
     image_scores = np.hstack([all_boxes[j][:, 4]
-          for j in xrange(1, len(class_names))])
+                              for j in xrange(1, len(class_names))])
     if len(image_scores) > 10:
         image_thresh = np.sort(image_scores)[-max_boxes]
     else:
@@ -243,28 +249,28 @@ def vis_multiple(im, class_names, all_boxes, filename='vis.png'):
                               bbox[2] - bbox[0],
                               bbox[3] - bbox[1], fill=False,
                               edgecolor='red', linewidth=1)
-                    )
-                    
+            )
+
             plt.gca().text(bbox[0], bbox[1] - 2,
-                        '{:s} {:.3f}'.format(class_names[j], score),
-                        bbox=dict(facecolor='blue', alpha=0.5),
-                        fontsize=8, color='white')        
-                
+                           '{:s} {:.3f}'.format(class_names[j], score),
+                           bbox=dict(facecolor='blue', alpha=0.5),
+                           fontsize=8, color='white')
+
     plt.title('Best %d Attributes using gt boxes' % max_boxes)
     plt.show()
-    plt.savefig('./data/vis/%s' % filename)    
-   
-  
-def vis_relations(im, class_names, box_proposals, scores, filename='vis.png'):
+    plt.savefig('./data/vis/%s' % filename)
 
+
+def vis_relations(im, class_names, box_proposals, scores, filename='vis.png'):
     n = box_proposals.shape[0]
-    assert scores.shape[0] == n*n
-    print filename
+    assert scores.shape[0] == n * n
+    print
+    filename
     import matplotlib.pyplot as plt
     im = im[:, :, (2, 1, 0)]
     plt.cla()
     plt.imshow(im)
-    
+
     max_rels = 5
     scores = scores[:, 1:]
     image_scores = scores.flatten()
@@ -272,24 +278,24 @@ def vis_relations(im, class_names, box_proposals, scores, filename='vis.png'):
         image_thresh = np.sort(image_scores)[-max_rels]
     else:
         image_thresh = -np.inf
-        
+
     for i in xrange(n):
         for j in xrange(n):
-            keep = np.where(scores[i*n+j] >= image_thresh)[0]
+            keep = np.where(scores[i * n + j] >= image_thresh)[0]
             for ix in keep:
                 bbox = box_proposals[i]
-                score = scores[i*n+j, ix]
+                score = scores[i * n + j, ix]
                 plt.gca().add_patch(
                     plt.Rectangle((bbox[0], bbox[1]),
                                   bbox[2] - bbox[0],
                                   bbox[3] - bbox[1], fill=False,
                                   edgecolor='red', linewidth=1)
-                        )
-                        
+                )
+
                 plt.gca().text(bbox[0], bbox[1] - 2,
-                            '{:s} {:.3f}'.format(class_names[ix], score),
-                            bbox=dict(facecolor='blue', alpha=0.5),
-                            fontsize=8, color='white')   
+                               '{:s} {:.3f}'.format(class_names[ix], score),
+                               bbox=dict(facecolor='blue', alpha=0.5),
+                               fontsize=8, color='white')
 
                 bbox = box_proposals[j]
                 plt.gca().add_patch(
@@ -297,12 +303,12 @@ def vis_relations(im, class_names, box_proposals, scores, filename='vis.png'):
                                   bbox[2] - bbox[0],
                                   bbox[3] - bbox[1], fill=False,
                                   edgecolor='red', linewidth=1)
-                        )
-                
+                )
+
     plt.title('Best %d Relations using gt boxes' % max_rels)
     plt.show()
     plt.savefig('./data/vis/%s' % filename)
-    
+
 
 def apply_nms(all_boxes, thresh):
     """Apply non-maximum suppression to all predicted boxes output by the
@@ -324,8 +330,8 @@ def apply_nms(all_boxes, thresh):
             if len(keep) == 0:
                 continue
             nms_boxes[cls_ind][im_ind] = dets[keep, :].copy()
-    return nms_boxes 
-    
+    return nms_boxes
+
 
 def test_net(net, imdb, max_per_image=400, thresh=-np.inf, vis=False, load_cache=False):
     """Test a Fast R-CNN network on an image database."""
@@ -334,18 +340,19 @@ def test_net(net, imdb, max_per_image=400, thresh=-np.inf, vis=False, load_cache
     #    all_boxes[cls][image] = N x 5 array of detections in
     #    (x1, y1, x2, y2, score)
     all_boxes = [[[] for _ in xrange(num_images)]
-                 for _ in xrange(imdb.num_classes)]             
+                 for _ in xrange(imdb.num_classes)]
 
     output_dir = get_output_dir(imdb, net)
     det_file = os.path.join(output_dir, 'detections.pkl')
     if load_cache and os.path.exists(det_file):
-        print 'Loading pickled detections from %s' % det_file
+        print
+        'Loading pickled detections from %s' % det_file
         with open(det_file, 'rb') as f:
             all_boxes = cPickle.load(f)
-    
+
     else:
         # timers
-        _t = {'im_detect' : Timer(), 'misc' : Timer()}
+        _t = {'im_detect': Timer(), 'misc': Timer()}
 
         if not cfg.TEST.HAS_RPN:
             roidb = imdb.roidb
@@ -361,7 +368,7 @@ def test_net(net, imdb, max_per_image=400, thresh=-np.inf, vis=False, load_cache
                 # that have the gt_classes field set to 0, which means there's no
                 # ground truth.
                 box_proposals = roidb[i]['boxes'][roidb[i]['gt_classes'] == 0]
-                
+
             im = cv2.imread(imdb.image_path_at(i))
             _t['im_detect'].tic()
             scores, boxes, attr_scores, rel_scores = im_detect(net, im, box_proposals)
@@ -375,10 +382,10 @@ def test_net(net, imdb, max_per_image=400, thresh=-np.inf, vis=False, load_cache
                 if cfg.TEST.AGNOSTIC:
                     cls_boxes = boxes[inds, 4:8]
                 else:
-                    cls_boxes = boxes[inds, j*4:(j+1)*4]
+                    cls_boxes = boxes[inds, j * 4:(j + 1) * 4]
                 cls_dets = np.hstack((cls_boxes, cls_scores[:, np.newaxis])) \
-                          .astype(np.float32, copy=False)
-                #keep = soft_nms(cls_dets, method=cfg.TEST.SOFT_NMS)
+                    .astype(np.float32, copy=False)
+                # keep = soft_nms(cls_dets, method=cfg.TEST.SOFT_NMS)
                 keep = nms(cls_dets, cfg.TEST.NMS)
                 cls_dets = cls_dets[keep, :]
                 if vis:
@@ -393,21 +400,23 @@ def test_net(net, imdb, max_per_image=400, thresh=-np.inf, vis=False, load_cache
                     image_thresh = np.sort(image_scores)[-max_per_image]
                     for j in xrange(1, imdb.num_classes):
                         keep = np.where(all_boxes[j][i][:, 4] >= image_thresh)[0]
-                        all_boxes[j][i] = all_boxes[j][i][keep, :]                        
-                        
+                        all_boxes[j][i] = all_boxes[j][i][keep, :]
+
             _t['misc'].toc()
 
-            print 'im_detect: {:d}/{:d} {:.3f}s {:.3f}s' \
-                  .format(i + 1, num_images, _t['im_detect'].average_time,
-                          _t['misc'].average_time)
+            print
+            'im_detect: {:d}/{:d} {:.3f}s {:.3f}s' \
+                .format(i + 1, num_images, _t['im_detect'].average_time,
+                        _t['misc'].average_time)
 
         with open(det_file, 'wb') as f:
             cPickle.dump(all_boxes, f, cPickle.HIGHEST_PROTOCOL)
 
-    print 'Evaluating detections'
+    print
+    'Evaluating detections'
     imdb.evaluate_detections(all_boxes, output_dir)
-    
-    
+
+
 def test_net_with_gt_boxes(net, imdb, max_per_image=400, thresh=-np.inf, vis=False, load_cache=False):
     """Test a Fast R-CNN network on an image database, evaluating attribute 
        and relation detections given ground truth boxes."""
@@ -418,27 +427,28 @@ def test_net_with_gt_boxes(net, imdb, max_per_image=400, thresh=-np.inf, vis=Fal
     all_boxes = [[[] for _ in xrange(num_images)]
                  for _ in xrange(imdb.num_attributes)]
     rel_boxes = [[[] for _ in xrange(num_images)]
-                 for _ in xrange(imdb.num_relations)]                  
+                 for _ in xrange(imdb.num_relations)]
 
     output_dir = get_output_dir(imdb, net, attributes=True)
     det_file = os.path.join(output_dir, 'attribute_detections.pkl')
     rel_file = os.path.join(output_dir, 'relation_detections.pkl')
     if load_cache and os.path.exists(det_file):
-        print 'Loading pickled detections from %s' % det_file
+        print
+        'Loading pickled detections from %s' % det_file
         with open(det_file, 'rb') as f:
             all_boxes = cPickle.load(f)
         with open(rel_file, 'rb') as f:
             rel_boxes = cPickle.load(f)
-    
+
     else:
         # timers
-        _t = {'im_detect' : Timer(), 'misc' : Timer()}
+        _t = {'im_detect': Timer(), 'misc': Timer()}
 
         roidb = imdb.gt_roidb()
 
         for i in xrange(num_images):
             box_proposals = roidb[i]['boxes']
-                
+
             im = cv2.imread(imdb.image_path_at(i))
             _t['im_detect'].tic()
             scores, boxes, attr_scores, rel_scores = im_detect(net, im, box_proposals, force_boxes=True)
@@ -447,17 +457,17 @@ def test_net_with_gt_boxes(net, imdb, max_per_image=400, thresh=-np.inf, vis=Fal
             _t['misc'].tic()
             # skip j = 0, because it's the no attribute class
             if attr_scores.shape[1] < imdb.num_attributes:
-                attr_scores = np.hstack((np.zeros((attr_scores.shape[0],1)),attr_scores))
+                attr_scores = np.hstack((np.zeros((attr_scores.shape[0], 1)), attr_scores))
             if rel_scores and rel_scores.shape[1] < imdb.num_relations:
-                rel_scores = np.hstack((np.zeros((rel_scores.shape[0],1)),rel_scores))
+                rel_scores = np.hstack((np.zeros((rel_scores.shape[0], 1)), rel_scores))
             for j in xrange(1, imdb.num_attributes):
                 inds = np.where(attr_scores[:, j] > thresh)[0]
                 cls_scores = attr_scores[inds, j]
                 cls_boxes = box_proposals[inds, :]
                 cls_dets = np.hstack((cls_boxes, cls_scores[:, np.newaxis])) \
-                          .astype(np.float32, copy=False)
+                    .astype(np.float32, copy=False)
                 all_boxes[j][i] = cls_dets
-                
+
             # Limit to max_per_image detections *over all attributes*
             if max_per_image > 0:
                 image_scores = np.hstack([all_boxes[j][i][:, 4]
@@ -472,16 +482,18 @@ def test_net_with_gt_boxes(net, imdb, max_per_image=400, thresh=-np.inf, vis=Fal
                 im_boxes = [all_boxes[j][i] for j in xrange(imdb.num_attributes)]
                 vis_multiple(im, imdb.attributes, im_boxes, filename='attr_%d.png' % i)
                 if rel_scores:
-                    vis_relations(im, imdb.relations, box_proposals, rel_scores, filename='rel_%d.png' % i)                
-                        
+                    vis_relations(im, imdb.relations, box_proposals, rel_scores, filename='rel_%d.png' % i)
+
             _t['misc'].toc()
 
-            print 'im_detect: {:d}/{:d} {:.3f}s {:.3f}s' \
-                  .format(i + 1, num_images, _t['im_detect'].average_time,
-                          _t['misc'].average_time)
+            print
+            'im_detect: {:d}/{:d} {:.3f}s {:.3f}s' \
+                .format(i + 1, num_images, _t['im_detect'].average_time,
+                        _t['misc'].average_time)
 
         with open(det_file, 'wb') as f:
             cPickle.dump(all_boxes, f, cPickle.HIGHEST_PROTOCOL)
 
-    print 'Evaluating attribute and / or relation detections'
-    imdb.evaluate_attributes(all_boxes, output_dir)    
+    print
+    'Evaluating attribute and / or relation detections'
+    imdb.evaluate_attributes(all_boxes, output_dir)

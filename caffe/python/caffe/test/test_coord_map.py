@@ -1,9 +1,8 @@
+import random
 import unittest
 
-import numpy as np
-import random
-
 import caffe
+import numpy as np
 from caffe import layers as L
 from caffe import params as P
 from caffe.coord_map import coord_map_from_to, crop
@@ -23,9 +22,9 @@ def coord_net_spec(ks=3, stride=1, pad=0, pool=2, dstride=2, dpad=0):
         n.conv, pool=P.Pooling.MAX, kernel_size=pool, stride=pool, pad=0)
     # for upsampling kernel size is 2x stride
     try:
-        deconv_ks = [s*2 for s in dstride]
+        deconv_ks = [s * 2 for s in dstride]
     except:
-        deconv_ks = dstride*2
+        deconv_ks = dstride * 2
     n.deconv = L.Deconvolution(
         n.pool, num_output=10, kernel_size=deconv_ks, stride=dstride, pad=dpad)
     return n

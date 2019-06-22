@@ -18,6 +18,7 @@ Most tools in $ROOT/tools take a --cfg option to specify an override file.
 
 import os
 import os.path as osp
+
 import numpy as np
 # `pip install easydict` if you don't have it
 from easydict import EasyDict as edict
@@ -198,7 +199,7 @@ __C.TEST.HAS_RELATIONS = False
 # coordinates. If DEDUP_BOXES > 0, then DEDUP_BOXES is used as the scale factor
 # for identifying duplicate boxes.
 # 1/16 is correct for {Alex,Caffe}Net, VGG_CNN_M_1024, and VGG16
-__C.DEDUP_BOXES = 1./16.
+__C.DEDUP_BOXES = 1. / 16.
 
 # Pixel mean values (BGR order) as a (1, 1, 3) array
 # We use the same pixel mean for all networks even though it's not exactly what
@@ -249,6 +250,7 @@ def get_output_dir(imdb, net=None, attributes=False):
         os.makedirs(outdir)
     return outdir
 
+
 def _merge_a_into_b(a, b):
     """Merge config dictionary a into config dictionary b, clobbering the
     options in b whenever they are also specified in a.
@@ -268,8 +270,8 @@ def _merge_a_into_b(a, b):
                 v = np.array(v, dtype=b[k].dtype)
             else:
                 raise ValueError(('Type mismatch ({} vs. {}) '
-                                'for config key: {}').format(type(b[k]),
-                                                            type(v), k))
+                                  'for config key: {}').format(type(b[k]),
+                                                               type(v), k))
 
         # recursively merge dicts
         if type(v) is edict:
@@ -281,6 +283,7 @@ def _merge_a_into_b(a, b):
         else:
             b[k] = v
 
+
 def cfg_from_file(filename):
     """Load a config file and merge it into the default options."""
     import yaml
@@ -288,6 +291,7 @@ def cfg_from_file(filename):
         yaml_cfg = edict(yaml.load(f))
 
     _merge_a_into_b(yaml_cfg, __C)
+
 
 def cfg_from_list(cfg_list):
     """Set config keys via list (e.g., from command line)."""
@@ -308,5 +312,5 @@ def cfg_from_list(cfg_list):
             value = v
         assert type(value) == type(d[subkey]), \
             'type {} does not match original type {}'.format(
-            type(value), type(d[subkey]))
+                type(value), type(d[subkey]))
         d[subkey] = value

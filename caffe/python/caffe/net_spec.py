@@ -20,9 +20,9 @@ are not guaranteed to be forward-compatible.
 
 from collections import OrderedDict, Counter
 
-from .proto import caffe_pb2
-from google import protobuf
 import six
+
+from .proto import caffe_pb2
 
 
 def param_name_dict():
@@ -153,7 +153,7 @@ class Function(object):
             else:
                 try:
                     assign_proto(getattr(layer,
-                        _param_names[self.type_name] + '_param'), k, v)
+                                         _param_names[self.type_name] + '_param'), k, v)
                 except (AttributeError, KeyError):
                     assign_proto(layer, k, v)
 
@@ -206,6 +206,7 @@ class Layers(object):
                 return fn.tops[0]
             else:
                 return fn.tops
+
         return layer_fn
 
 
@@ -215,10 +216,11 @@ class Parameters(object):
     to specify max pooling."""
 
     def __getattr__(self, name):
-       class Param:
+        class Param:
             def __getattr__(self, param_name):
                 return getattr(getattr(caffe_pb2, name + 'Parameter'), param_name)
-       return Param()
+
+        return Param()
 
 
 _param_names = param_name_dict()

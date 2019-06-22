@@ -5,15 +5,16 @@
 # Written by Ross Girshick
 # --------------------------------------------------------
 
+import cv2
+import numpy as np
+from fast_rcnn.bbox_transform import bbox_transform
 from fast_rcnn.config import cfg
 from fast_rcnn.train import filter_roidb
-from utils.blob import im_list_to_blob
-from utils.timer import Timer
 from generate_anchors import generate_anchors
+from utils.blob import im_list_to_blob
 from utils.cython_bbox import bbox_overlaps
-from fast_rcnn.bbox_transform import bbox_transform
-import numpy as np
-import cv2
+from utils.timer import Timer
+
 
 def _vis_proposals(im, dets, thresh=0.5):
     """Draw detected bounding boxes."""
@@ -34,7 +35,7 @@ def _vis_proposals(im, dets, thresh=0.5):
                           bbox[2] - bbox[0],
                           bbox[3] - bbox[1], fill=False,
                           edgecolor='red', linewidth=3.5)
-            )
+        )
         ax.text(bbox[0], bbox[1] - 2,
                 '{:s} {:.3f}'.format(class_name, score),
                 bbox=dict(facecolor='blue', alpha=0.5),
@@ -43,10 +44,11 @@ def _vis_proposals(im, dets, thresh=0.5):
     ax.set_title(('{} detections with '
                   'p({} | box) >= {:.1f}').format(class_name, class_name,
                                                   thresh),
-                  fontsize=14)
+                 fontsize=14)
     plt.axis('off')
     plt.tight_layout()
     plt.draw()
+
 
 def _get_image_blob(im):
     """Converts an image into a network input.
@@ -85,6 +87,7 @@ def _get_image_blob(im):
 
     return blob, im_info
 
+
 def im_proposals(net, im):
     """Generate RPN proposals on a single image."""
     blobs = {}
@@ -92,13 +95,14 @@ def im_proposals(net, im):
     net.blobs['data'].reshape(*(blobs['data'].shape))
     net.blobs['im_info'].reshape(*(blobs['im_info'].shape))
     blobs_out = net.forward(
-            data=blobs['data'].astype(np.float32, copy=False),
-            im_info=blobs['im_info'].astype(np.float32, copy=False))
+        data=blobs['data'].astype(np.float32, copy=False),
+        im_info=blobs['im_info'].astype(np.float32, copy=False))
 
     scale = blobs['im_info'][0, 2]
     boxes = blobs_out['rois'][:, 1:].copy() / scale
     scores = blobs_out['scores'].copy()
     return boxes, scores
+
 
 def imdb_proposals(net, imdb):
     """Generate RPN proposals on all images in an imdb."""
@@ -110,8 +114,9 @@ def imdb_proposals(net, imdb):
         _t.tic()
         imdb_boxes[i], scores = im_proposals(net, im)
         _t.toc()
-        print 'im_proposals: {:d}/{:d} {:.3f}s' \
-              .format(i + 1, imdb.num_images, _t.average_time)
+        print
+        'im_proposals: {:d}/{:d} {:.3f}s' \
+            .format(i + 1, imdb.num_images, _t.average_time)
         if 0:
             dets = np.hstack((imdb_boxes[i], scores))
             # from IPython import embed; embed()
@@ -121,10 +126,11 @@ def imdb_proposals(net, imdb):
     return imdb_boxes
 
 
-def imdb_rpn_compute_stats(net, imdb, anchor_scales=(8,16,32),
+def imdb_rpn_compute_stats(net, imdb, anchor_scales=(8, 16, 32),
                            feature_stride=16):
     raw_anchors = generate_anchors(scales=np.array(anchor_scales))
-    print raw_anchors.shape
+    print
+    raw_anchors.shape
     sums = 0
     squred_sums = 0
     counts = 0
@@ -148,7 +154,8 @@ def imdb_rpn_compute_stats(net, imdb, anchor_scales=(8,16,32),
 
     for i in xrange(len(roidb)):
         if not i % 5000:
-            print 'computing %d/%d' % (i, imdb.num_images)
+            print
+            'computing %d/%d' % (i, imdb.num_images)
         im = cv2.imread(roidb[i]['image'])
         im_data, im_info = _get_image_blob(im)
         gt_boxes = roidb[i]['boxes']
@@ -208,6 +215,8 @@ def imdb_rpn_compute_stats(net, imdb, anchor_scales=(8,16,32),
 
     means = sums / counts
     stds = np.sqrt(squred_sums / counts - means ** 2)
-    print means
-    print stds
+    print
+    means
+    print
+    stds
     return means, stds

@@ -1,21 +1,21 @@
-import os
-import time
-import cPickle
 import datetime
 import logging
-import flask
-import werkzeug
 import optparse
-import tornado.wsgi
-import tornado.httpserver
+import os
+import time
+import urllib
+
+import cPickle
+import cStringIO as StringIO
+import caffe
+import exifutil
+import flask
 import numpy as np
 import pandas as pd
+import tornado.httpserver
+import tornado.wsgi
+import werkzeug
 from PIL import Image
-import cStringIO as StringIO
-import urllib
-import exifutil
-
-import caffe
 
 REPO_DIRNAME = os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + '/../..')
 UPLOAD_FOLDER = '/tmp/caffe_demos_uploads'
@@ -59,7 +59,7 @@ def classify_upload():
         # We will save the file to disk for possible data collection.
         imagefile = flask.request.files['imagefile']
         filename_ = str(datetime.datetime.now()).replace(' ', '_') + \
-            werkzeug.secure_filename(imagefile.filename)
+                    werkzeug.secure_filename(imagefile.filename)
         filename = os.path.join(UPLOAD_FOLDER, filename_)
         imagefile.save(filename)
         logging.info('Saving to %s.', filename)
@@ -91,8 +91,8 @@ def embed_image_html(image):
 
 def allowed_file(filename):
     return (
-        '.' in filename and
-        filename.rsplit('.', 1)[1] in ALLOWED_IMAGE_EXTENSIONS
+            '.' in filename and
+            filename.rsplit('.', 1)[1] in ALLOWED_IMAGE_EXTENSIONS
     )
 
 

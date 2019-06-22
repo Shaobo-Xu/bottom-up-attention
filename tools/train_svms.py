@@ -12,19 +12,21 @@ Train post-hoc SVMs using the algorithm and hyper-parameters from
 traditional R-CNN.
 """
 
-import _init_paths
-from fast_rcnn.config import cfg, cfg_from_file
-from datasets.factory import get_imdb
-from fast_rcnn.test import im_detect
-from utils.timer import Timer
-import caffe
 import argparse
+import os
 import pprint
+import sys
+
+import caffe
+import cv2
 import numpy as np
 import numpy.random as npr
-import cv2
+from datasets.factory import get_imdb
+from fast_rcnn.config import cfg, cfg_from_file
+from fast_rcnn.test import im_detect
 from sklearn import svm
-import os, sys
+from utils.timer import Timer
+
 
 class SVMTrainer(object):
     """
@@ -47,7 +49,7 @@ class SVMTrainer(object):
                          for cls in imdb.classes]
 
     def _get_feature_scale(self, num_images=100):
-        TARGET_NORM = 20.0 # Magic value from traditional R-CNN
+        TARGET_NORM = 20.0  # Magic value from traditional R-CNN
         _t = Timer()
         roidb = self.imdb.roidb
         total_norm = 0.0
@@ -108,8 +110,9 @@ class SVMTrainer(object):
                     cls_feat = feat[cls_inds, :]
                     self.trainers[j].append_pos(cls_feat)
 
-            print 'get_pos_examples: {:d}/{:d} {:.3f}s' \
-                  .format(i + 1, len(roidb), _t.average_time)
+            print
+            'get_pos_examples: {:d}/{:d} {:.3f}s' \
+                .format(i + 1, len(roidb), _t.average_time)
 
     def initialize_net(self):
         # Start all SVM parameters at zero
@@ -119,14 +122,15 @@ class SVMTrainer(object):
         # Initialize SVMs in a smart way. Not doing this because its such
         # a good initialization that we might not learn something close to
         # the SVM solution.
-#        # subtract background weights and biases for the foreground classes
-#        w_bg = self.net.params['cls_score'][0].data[0, :]
-#        b_bg = self.net.params['cls_score'][1].data[0]
-#        self.net.params['cls_score'][0].data[1:, :] -= w_bg
-#        self.net.params['cls_score'][1].data[1:] -= b_bg
-#        # set the background weights and biases to 0 (where they shall remain)
-#        self.net.params['cls_score'][0].data[0, :] = 0
-#        self.net.params['cls_score'][1].data[0] = 0
+
+    #        # subtract background weights and biases for the foreground classes
+    #        w_bg = self.net.params['cls_score'][0].data[0, :]
+    #        b_bg = self.net.params['cls_score'][1].data[0]
+    #        self.net.params['cls_score'][0].data[1:, :] -= w_bg
+    #        self.net.params['cls_score'][1].data[1:] -= b_bg
+    #        # set the background weights and biases to 0 (where they shall remain)
+    #        self.net.params['cls_score'][0].data[0, :] = 0
+    #        self.net.params['cls_score'][1].data[0] = 0
 
     def update_net(self, cls_ind, w, b):
         self.net.params['cls_score'][0].data[cls_ind, :] = w
@@ -189,6 +193,7 @@ class SVMTrainer(object):
             new_w_b = self.trainers[j].append_neg_and_retrain(force=True)
             self.update_net(j, new_w_b[0], new_w_b[1])
 
+
 class SVMClassTrainer(object):
     """Manages post-hoc SVM training for a single object class."""
 
@@ -250,9 +255,9 @@ class SVMClassTrainer(object):
 
         # Sanity check
         scores_ret = (
-                X * 1.0 / self.feature_scale).dot(w.T * self.feature_scale) + b
+                             X * 1.0 / self.feature_scale).dot(w.T * self.feature_scale) + b
         assert np.allclose(scores, scores_ret[:, 0], atol=1e-5), \
-                "Scores from returned model don't match decision function"
+            "Scores from returned model don't match decision function"
 
         return ((w * self.feature_scale, b), pos_scores, neg_scores)
 
@@ -279,6 +284,7 @@ class SVMClassTrainer(object):
         else:
             return None
 
+
 def parse_args():
     """
     Parse input arguments
@@ -304,6 +310,7 @@ def parse_args():
 
     args = parser.parse_args()
     return args
+
 
 if __name__ == '__main__':
     # Must turn this off to prevent issues when digging into the net blobs to
@@ -338,16 +345,20 @@ if __name__ == '__main__':
     out_dir = os.path.dirname(args.caffemodel)
 
     imdb = get_imdb(args.imdb_name)
-    print 'Loaded dataset `{:s}` for training'.format(imdb.name)
+    print
+    'Loaded dataset `{:s}` for training'.format(imdb.name)
 
     # enhance roidb to contain flipped examples
     if cfg.TRAIN.USE_FLIPPED:
-        print 'Appending horizontally-flipped training examples...'
+        print
+        'Appending horizontally-flipped training examples...'
         imdb.append_flipped_images()
-        print 'done'
+        print
+        'done'
 
     SVMTrainer(net, imdb).train()
 
     filename = '{}/{}.caffemodel'.format(out_dir, out)
     net.save(filename)
-    print 'Wrote svm model to: {:s}'.format(filename)
+    print
+    'Wrote svm model to: {:s}'.format(filename)

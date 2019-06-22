@@ -1,11 +1,11 @@
-import unittest
-import tempfile
 import os
-import numpy as np
-import six
+import tempfile
+import unittest
 from collections import OrderedDict
 
 import caffe
+import numpy as np
+import six
 
 
 def simple_net_file(num_output):
@@ -42,8 +42,8 @@ class TestNet(unittest.TestCase):
         self.net = caffe.Net(net_file, caffe.TRAIN)
         # fill in valid labels
         self.net.blobs['label'].data[...] = \
-                np.random.randint(self.num_output,
-                    size=self.net.blobs['label'].data.shape)
+            np.random.randint(self.num_output,
+                              size=self.net.blobs['label'].data.shape)
         os.remove(net_file)
 
     def test_memory(self):
@@ -106,7 +106,7 @@ class TestNet(unittest.TestCase):
         for name in self.net.params:
             for i in range(len(self.net.params[name])):
                 self.assertEqual(abs(self.net.params[name][i].data
-                    - net2.params[name][i].data).sum(), 0)
+                                     - net2.params[name][i].data).sum(), 0)
 
     def test_save_hdf5(self):
         f = tempfile.NamedTemporaryFile(mode='w+', delete=False)
@@ -120,10 +120,10 @@ class TestNet(unittest.TestCase):
         for name in self.net.params:
             for i in range(len(self.net.params[name])):
                 self.assertEqual(abs(self.net.params[name][i].data
-                    - net2.params[name][i].data).sum(), 0)
+                                     - net2.params[name][i].data).sum(), 0)
+
 
 class TestLevels(unittest.TestCase):
-
     TEST_NET = """
 layer {
   name: "data"
@@ -194,7 +194,6 @@ layer {
 
 
 class TestStages(unittest.TestCase):
-
     TEST_NET = """
 layer {
   name: "data"
@@ -263,7 +262,6 @@ layer {
 
 
 class TestAllInOne(unittest.TestCase):
-
     TEST_NET = """
 layer {
   name: "train_data"
@@ -328,7 +326,7 @@ layer {
         os.remove(self.f.name)
 
     def check_net(self, net, outputs):
-        self.assertEqual(list(net.blobs['data'].shape), [1,1,10,10])
+        self.assertEqual(list(net.blobs['data'].shape), [1, 1, 10, 10])
         self.assertEqual(net.outputs, outputs)
 
     def test_train(self):
@@ -342,4 +340,3 @@ layer {
     def test_deploy(self):
         net = caffe.Net(self.f.name, caffe.TEST, stages=['deploy'])
         self.check_net(net, ['pred'])
-

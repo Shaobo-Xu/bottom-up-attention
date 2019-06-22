@@ -2,8 +2,9 @@
 Generate data used in the HDF5DataLayer and GradientBasedSolver tests.
 """
 import os
-import numpy as np
+
 import h5py
+import numpy as np
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -28,8 +29,10 @@ label = label.astype('float32')
 # to handle arbitrary number of output ("top") Blobs.
 label2 = label + 1
 
-print data
-print label
+print
+data
+print
+label
 
 with h5py.File(script_dir + '/sample_data.h5', 'w') as f:
     f['data'] = data
@@ -70,8 +73,10 @@ data = data.astype('float32')
 targets = np.random.randn(num_rows, 1)
 targets = targets.astype('float32')
 
-print data
-print targets
+print
+data
+print
+targets
 
 with h5py.File(script_dir + '/solver_data.h5', 'w') as f:
     f['data'] = data

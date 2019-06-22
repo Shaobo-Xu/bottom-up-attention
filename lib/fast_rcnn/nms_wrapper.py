@@ -5,14 +5,13 @@
 # Written by Navaneeth Bodla and Bharat Singh
 # ----------------------------------------------------------
 
-from fast_rcnn.config import cfg
-from nms.gpu_nms import gpu_nms
-from nms.cpu_nms import cpu_nms, cpu_soft_nms
 import numpy as np
+from fast_rcnn.config import cfg
+from nms.cpu_nms import cpu_nms, cpu_soft_nms
+from nms.gpu_nms import gpu_nms
 
 
 def soft_nms(dets, sigma=0.5, Nt=0.3, threshold=0.001, method=1):
-
     keep = cpu_soft_nms(np.ascontiguousarray(dets, dtype=np.float32),
                         np.float32(sigma), np.float32(Nt),
                         np.float32(threshold),

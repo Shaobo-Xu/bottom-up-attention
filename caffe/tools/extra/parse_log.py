@@ -6,12 +6,13 @@ Parse training log
 Evolved from parse_log.sh
 """
 
-import os
-import re
-import extract_seconds
 import argparse
 import csv
+import os
+import re
 from collections import OrderedDict
+
+import extract_seconds
 
 
 def parse_log(path_to_log):
@@ -172,7 +173,8 @@ def write_csv(output_filename, dict_list, delimiter, verbose=False):
         dict_writer.writeheader()
         dict_writer.writerows(dict_list)
     if verbose:
-        print 'Wrote %s' % output_filename
+        print
+        'Wrote %s' % output_filename
 
 
 def parse_args():

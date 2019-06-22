@@ -7,16 +7,16 @@
 
 """Train a Fast R-CNN network."""
 
-import caffe
-from fast_rcnn.config import cfg
-import roi_data_layer.roidb as rdl_roidb
-from utils.timer import Timer
-import numpy as np
 import os
 
-from caffe.proto import caffe_pb2
-import google.protobuf as pb2
+import caffe
 import google.protobuf.text_format as text_format
+import numpy as np
+import roi_data_layer.roidb as rdl_roidb
+from caffe.proto import caffe_pb2
+from fast_rcnn.config import cfg
+from utils.timer import Timer
+
 
 class SolverWrapper(object):
     """A simple wrapper around Caffe's solver.
@@ -30,21 +30,23 @@ class SolverWrapper(object):
         self.output_dir = output_dir
 
         if (cfg.TRAIN.HAS_RPN and cfg.TRAIN.BBOX_REG and
-            cfg.TRAIN.BBOX_NORMALIZE_TARGETS):
+                cfg.TRAIN.BBOX_NORMALIZE_TARGETS):
             # RPN can only use precomputed normalization because there are no
             # fixed statistics to compute a priori
             assert cfg.TRAIN.BBOX_NORMALIZE_TARGETS_PRECOMPUTED
 
         if cfg.TRAIN.BBOX_REG:
-            print 'Computing bounding-box regression targets...'
+            print
+            'Computing bounding-box regression targets...'
             self.bbox_means, self.bbox_stds = \
-                    rdl_roidb.add_bbox_regression_targets(roidb)
-            print 'done'
+                rdl_roidb.add_bbox_regression_targets(roidb)
+            print
+            'done'
 
         self.solver = caffe.SGDSolver(solver_prototxt)
         if pretrained_model is not None:
-            print ('Loading pretrained model '
-                   'weights from {:s}').format(pretrained_model)
+            print('Loading pretrained model '
+                  'weights from {:s}').format(pretrained_model)
             self.solver.net.copy_from(pretrained_model)
 
         self.solver_param = caffe_pb2.SolverParameter()
@@ -60,12 +62,12 @@ class SolverWrapper(object):
         net = self.solver.net
 
         scale_bbox_params_faster_rcnn = (cfg.TRAIN.BBOX_REG and
-                             cfg.TRAIN.BBOX_NORMALIZE_TARGETS and
-                             net.params.has_key('bbox_pred'))
+                                         cfg.TRAIN.BBOX_NORMALIZE_TARGETS and
+                                         net.params.has_key('bbox_pred'))
 
         scale_bbox_params_rfcn = (cfg.TRAIN.BBOX_REG and
-                             cfg.TRAIN.BBOX_NORMALIZE_TARGETS and
-                             net.params.has_key('rfcn_bbox'))
+                                  cfg.TRAIN.BBOX_NORMALIZE_TARGETS and
+                                  net.params.has_key('rfcn_bbox'))
 
         scale_bbox_params_rpn = (cfg.TRAIN.RPN_NORMALIZE_TARGETS and
                                  net.params.has_key('rpn_bbox_pred'))
@@ -77,11 +79,11 @@ class SolverWrapper(object):
 
             # scale and shift with bbox reg unnormalization; then save snapshot
             net.params['bbox_pred'][0].data[...] = \
-                    (net.params['bbox_pred'][0].data *
-                     self.bbox_stds[:, np.newaxis])
+                (net.params['bbox_pred'][0].data *
+                 self.bbox_stds[:, np.newaxis])
             net.params['bbox_pred'][1].data[...] = \
-                    (net.params['bbox_pred'][1].data *
-                     self.bbox_stds + self.bbox_means)
+                (net.params['bbox_pred'][1].data *
+                 self.bbox_stds + self.bbox_means)
 
         if scale_bbox_params_rpn:
             rpn_orig_0 = net.params['rpn_bbox_pred'][0].data.copy()
@@ -89,9 +91,9 @@ class SolverWrapper(object):
             num_anchor = rpn_orig_0.shape[0] / 4
             # scale and shift with bbox reg unnormalization; then save snapshot
             self.rpn_means = np.tile(np.asarray(cfg.TRAIN.RPN_NORMALIZE_MEANS),
-                                      num_anchor)
-            self.rpn_stds = np.tile(np.asarray(cfg.TRAIN.RPN_NORMALIZE_STDS),
                                      num_anchor)
+            self.rpn_stds = np.tile(np.asarray(cfg.TRAIN.RPN_NORMALIZE_STDS),
+                                    num_anchor)
             net.params['rpn_bbox_pred'][0].data[...] = \
                 (net.params['rpn_bbox_pred'][0].data *
                  self.rpn_stds[:, np.newaxis, np.newaxis, np.newaxis])
@@ -107,11 +109,11 @@ class SolverWrapper(object):
 
             # scale and shift with bbox reg unnormalization; then save snapshot
             net.params['rfcn_bbox'][0].data[...] = \
-                    (net.params['rfcn_bbox'][0].data *
-                     np.repeat(self.bbox_stds, repeat).reshape((orig_1.shape[0], 1, 1, 1)))
+                (net.params['rfcn_bbox'][0].data *
+                 np.repeat(self.bbox_stds, repeat).reshape((orig_1.shape[0], 1, 1, 1)))
             net.params['rfcn_bbox'][1].data[...] = \
-                    (net.params['rfcn_bbox'][1].data *
-                     np.repeat(self.bbox_stds, repeat) + np.repeat(self.bbox_means, repeat))
+                (net.params['rfcn_bbox'][1].data *
+                 np.repeat(self.bbox_stds, repeat) + np.repeat(self.bbox_means, repeat))
 
         infix = ('_' + cfg.TRAIN.SNAPSHOT_INFIX
                  if cfg.TRAIN.SNAPSHOT_INFIX != '' else '')
@@ -119,7 +121,8 @@ class SolverWrapper(object):
                     '_iter_{:d}'.format(self.solver.iter) + '.caffemodel')
         filename = os.path.join(self.output_dir, filename)
         net.save(str(filename))
-        print 'Wrote snapshot to: {:s}'.format(filename)
+        print
+        'Wrote snapshot to: {:s}'.format(filename)
 
         if scale_bbox_params_faster_rcnn:
             # restore net to original state
@@ -147,7 +150,8 @@ class SolverWrapper(object):
             self.solver.step(1)
             timer.toc()
             if self.solver.iter % (10 * self.solver_param.display) == 0:
-                print 'speed: {:.3f}s / iter'.format(timer.average_time)
+                print
+                'speed: {:.3f}s / iter'.format(timer.average_time)
 
             if self.solver.iter % cfg.TRAIN.SNAPSHOT_ITERS == 0:
                 last_snapshot_iter = self.solver.iter
@@ -157,18 +161,24 @@ class SolverWrapper(object):
             model_paths.append(self.snapshot())
         return model_paths
 
+
 def get_training_roidb(imdb):
     """Returns a roidb (Region of Interest database) for use in training."""
     if cfg.TRAIN.USE_FLIPPED:
-        print 'Appending horizontally-flipped training examples...'
+        print
+        'Appending horizontally-flipped training examples...'
         imdb.append_flipped_images()
-        print 'done'
+        print
+        'done'
 
-    print 'Preparing training data...'
+    print
+    'Preparing training data...'
     rdl_roidb.prepare_roidb(imdb)
-    print 'done'
+    print
+    'done'
 
     return imdb.roidb
+
 
 def filter_roidb(roidb):
     """Remove roidb entries that have no usable RoIs."""
@@ -190,9 +200,11 @@ def filter_roidb(roidb):
     num = len(roidb)
     filtered_roidb = [entry for entry in roidb if is_valid(entry)]
     num_after = len(filtered_roidb)
-    print 'Filtered {} roidb entries: {} -> {}'.format(num - num_after,
-                                                       num, num_after)
+    print
+    'Filtered {} roidb entries: {} -> {}'.format(num - num_after,
+                                                 num, num_after)
     return filtered_roidb
+
 
 def train_net(solver_prototxt, roidb, output_dir,
               pretrained_model=None, max_iters=40000):
@@ -202,7 +214,9 @@ def train_net(solver_prototxt, roidb, output_dir,
     sw = SolverWrapper(solver_prototxt, roidb, output_dir,
                        pretrained_model=pretrained_model)
 
-    print 'Solving...'
+    print
+    'Solving...'
     model_paths = sw.train_model(max_iters)
-    print 'done solving'
+    print
+    'done solving'
     return model_paths

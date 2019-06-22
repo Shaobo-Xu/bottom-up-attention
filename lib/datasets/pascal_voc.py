@@ -6,18 +6,19 @@
 # --------------------------------------------------------
 
 import os
-from datasets.imdb import imdb
-import datasets.ds_utils as ds_utils
-import xml.etree.ElementTree as ET
-import numpy as np
-import scipy.sparse
-import scipy.io as sio
-import utils.cython_bbox
-import cPickle
 import subprocess
 import uuid
-from voc_eval import voc_eval
+import xml.etree.ElementTree as ET
+
+import cPickle
+import datasets.ds_utils as ds_utils
+import numpy as np
+import scipy.io as sio
+import scipy.sparse
+from datasets.imdb import imdb
 from fast_rcnn.config import cfg
+from voc_eval import voc_eval
+
 
 class pascal_voc(imdb):
     def __init__(self, image_set, year, devkit_path=None):
@@ -25,9 +26,9 @@ class pascal_voc(imdb):
         self._year = year
         self._image_set = image_set
         self._devkit_path = self._get_default_path() if devkit_path is None \
-                            else devkit_path
+            else devkit_path
         self._data_path = os.path.join(self._devkit_path, 'VOC' + self._year)
-        self._classes = ('__background__', # always index 0
+        self._classes = ('__background__',  # always index 0
                          'aeroplane', 'bicycle', 'bird', 'boat',
                          'bottle', 'bus', 'car', 'cat', 'chair',
                          'cow', 'diningtable', 'dog', 'horse',
@@ -42,17 +43,17 @@ class pascal_voc(imdb):
         self._comp_id = 'comp4'
 
         # PASCAL specific config options
-        self.config = {'cleanup'     : True,
-                       'use_salt'    : True,
-                       'use_diff'    : False,
-                       'matlab_eval' : False,
-                       'rpn_file'    : None,
-                       'min_size'    : 2}
+        self.config = {'cleanup': True,
+                       'use_salt': True,
+                       'use_diff': False,
+                       'matlab_eval': False,
+                       'rpn_file': None,
+                       'min_size': 2}
 
         assert os.path.exists(self._devkit_path), \
-                'VOCdevkit path does not exist: {}'.format(self._devkit_path)
+            'VOCdevkit path does not exist: {}'.format(self._devkit_path)
         assert os.path.exists(self._data_path), \
-                'Path does not exist: {}'.format(self._data_path)
+            'Path does not exist: {}'.format(self._data_path)
 
     def image_path_at(self, i):
         """
@@ -67,7 +68,7 @@ class pascal_voc(imdb):
         image_path = os.path.join(self._data_path, 'JPEGImages',
                                   index + self._image_ext)
         assert os.path.exists(image_path), \
-                'Path does not exist: {}'.format(image_path)
+            'Path does not exist: {}'.format(image_path)
         return image_path
 
     def _load_image_set_index(self):
@@ -79,7 +80,7 @@ class pascal_voc(imdb):
         image_set_file = os.path.join(self._data_path, 'ImageSets', 'Main',
                                       self._image_set + '.txt')
         assert os.path.exists(image_set_file), \
-                'Path does not exist: {}'.format(image_set_file)
+            'Path does not exist: {}'.format(image_set_file)
         with open(image_set_file) as f:
             image_index = [x.strip() for x in f.readlines()]
         return image_index
@@ -100,14 +101,16 @@ class pascal_voc(imdb):
         if os.path.exists(cache_file):
             with open(cache_file, 'rb') as fid:
                 roidb = cPickle.load(fid)
-            print '{} gt roidb loaded from {}'.format(self.name, cache_file)
+            print
+            '{} gt roidb loaded from {}'.format(self.name, cache_file)
             return roidb
 
         gt_roidb = [self._load_pascal_annotation(index)
                     for index in self.image_index]
         with open(cache_file, 'wb') as fid:
             cPickle.dump(gt_roidb, fid, cPickle.HIGHEST_PROTOCOL)
-        print 'wrote gt roidb to {}'.format(cache_file)
+        print
+        'wrote gt roidb to {}'.format(cache_file)
 
         return gt_roidb
 
@@ -124,7 +127,8 @@ class pascal_voc(imdb):
         if os.path.exists(cache_file):
             with open(cache_file, 'rb') as fid:
                 roidb = cPickle.load(fid)
-            print '{} ss roidb loaded from {}'.format(self.name, cache_file)
+            print
+            '{} ss roidb loaded from {}'.format(self.name, cache_file)
             return roidb
 
         if int(self._year) == 2007 or self._image_set != 'test':
@@ -135,7 +139,8 @@ class pascal_voc(imdb):
             roidb = self._load_selective_search_roidb(None)
         with open(cache_file, 'wb') as fid:
             cPickle.dump(roidb, fid, cPickle.HIGHEST_PROTOCOL)
-        print 'wrote ss roidb to {}'.format(cache_file)
+        print
+        'wrote ss roidb to {}'.format(cache_file)
 
         return roidb
 
@@ -151,9 +156,10 @@ class pascal_voc(imdb):
 
     def _load_rpn_roidb(self, gt_roidb):
         filename = self.config['rpn_file']
-        print 'loading {}'.format(filename)
+        print
+        'loading {}'.format(filename)
         assert os.path.exists(filename), \
-               'rpn data not found at: {}'.format(filename)
+            'rpn data not found at: {}'.format(filename)
         with open(filename, 'rb') as f:
             box_list = cPickle.load(f)
         return self.create_roidb_from_box_list(box_list, gt_roidb)
@@ -163,7 +169,7 @@ class pascal_voc(imdb):
                                                 'selective_search_data',
                                                 self.name + '.mat'))
         assert os.path.exists(filename), \
-               'Selective search data not found at: {}'.format(filename)
+            'Selective search data not found at: {}'.format(filename)
         raw_data = sio.loadmat(filename)['boxes'].ravel()
 
         box_list = []
@@ -217,15 +223,15 @@ class pascal_voc(imdb):
 
         overlaps = scipy.sparse.csr_matrix(overlaps)
 
-        return {'boxes' : boxes,
+        return {'boxes': boxes,
                 'gt_classes': gt_classes,
-                'gt_overlaps' : overlaps,
-                'flipped' : False,
-                'seg_areas' : seg_areas}
+                'gt_overlaps': overlaps,
+                'flipped': False,
+                'seg_areas': seg_areas}
 
     def _get_comp_id(self):
         comp_id = (self._comp_id + '_' + self._salt if self.config['use_salt']
-            else self._comp_id)
+                   else self._comp_id)
         return comp_id
 
     def _get_voc_results_file_template(self):
@@ -243,7 +249,8 @@ class pascal_voc(imdb):
         for cls_ind, cls in enumerate(self.classes):
             if cls == '__background__':
                 continue
-            print 'Writing {} VOC results file'.format(cls)
+            print
+            'Writing {} VOC results file'.format(cls)
             filename = self._get_voc_results_file_template().format(cls)
             with open(filename, 'wt') as f:
                 for im_ind, index in enumerate(self.image_index):
@@ -257,7 +264,7 @@ class pascal_voc(imdb):
                                        dets[k, 0] + 1, dets[k, 1] + 1,
                                        dets[k, 2] + 1, dets[k, 3] + 1))
 
-    def _do_python_eval(self, output_dir = 'output'):
+    def _do_python_eval(self, output_dir='output'):
         annopath = os.path.join(
             self._devkit_path,
             'VOC' + self._year,
@@ -273,7 +280,8 @@ class pascal_voc(imdb):
         aps = []
         # The PASCAL VOC metric changed in 2010
         use_07_metric = True if int(self._year) < 2010 else False
-        print 'VOC07 metric? ' + ('Yes' if use_07_metric else 'No')
+        print
+        'VOC07 metric? ' + ('Yes' if use_07_metric else 'No')
         if not os.path.isdir(output_dir):
             os.mkdir(output_dir)
         for i, cls in enumerate(self._classes):
@@ -303,17 +311,20 @@ class pascal_voc(imdb):
         print('--------------------------------------------------------------')
 
     def _do_matlab_eval(self, output_dir='output'):
-        print '-----------------------------------------------------'
-        print 'Computing results with the official MATLAB eval code.'
-        print '-----------------------------------------------------'
+        print
+        '-----------------------------------------------------'
+        print
+        'Computing results with the official MATLAB eval code.'
+        print
+        '-----------------------------------------------------'
         path = os.path.join(cfg.ROOT_DIR, 'lib', 'datasets',
                             'VOCdevkit-matlab-wrapper')
         cmd = 'cd {} && '.format(path)
         cmd += '{:s} -nodisplay -nodesktop '.format(cfg.MATLAB)
         cmd += '-r "dbstop if error; '
         cmd += 'voc_eval(\'{:s}\',\'{:s}\',\'{:s}\',\'{:s}\'); quit;"' \
-               .format(self._devkit_path, self._get_comp_id(),
-                       self._image_set, output_dir)
+            .format(self._devkit_path, self._get_comp_id(),
+                    self._image_set, output_dir)
         print('Running:\n{}'.format(cmd))
         status = subprocess.call(cmd, shell=True)
 
@@ -337,8 +348,12 @@ class pascal_voc(imdb):
             self.config['use_salt'] = True
             self.config['cleanup'] = True
 
+
 if __name__ == '__main__':
     from datasets.pascal_voc import pascal_voc
+
     d = pascal_voc('trainval', '2007')
     res = d.roidb
-    from IPython import embed; embed()
+    from IPython import embed;
+
+    embed()

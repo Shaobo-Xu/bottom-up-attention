@@ -1,31 +1,22 @@
 # imports
-import json
-import time
-import pickle
-import scipy.misc
-import skimage.io
-import caffe
-
-import numpy as np
 import os.path as osp
-
-from xml.dom import minidom
 from random import shuffle
-from threading import Thread
-from PIL import Image
+from xml.dom import minidom
 
+import caffe
+import numpy as np
+import scipy.misc
+from PIL import Image
 from tools import SimpleTransformer
 
 
 class PascalMultilabelDataLayerSync(caffe.Layer):
-
     """
     This is a simple synchronous datalayer for training a multilabel model on
     PASCAL.
     """
 
     def setup(self, bottom, top):
-
         self.top_names = ['data', 'label']
 
         # === Read input parameters ===
@@ -79,7 +70,6 @@ class PascalMultilabelDataLayerSync(caffe.Layer):
 
 
 class BatchLoader(object):
-
     """
     This class abstracts away the loading of images.
     Images can either be loaded singly, or in a batch. The latter is used for
@@ -100,7 +90,8 @@ class BatchLoader(object):
         # this class does some simple data-manipulations
         self.transformer = SimpleTransformer()
 
-        print "BatchLoader initialized with {} images".format(
+        print
+        "BatchLoader initialized with {} images".format(
             len(self.indexlist))
 
     def load_next_image(self):
@@ -120,7 +111,7 @@ class BatchLoader(object):
         im = scipy.misc.imresize(im, self.im_shape)  # resize
 
         # do a simple horizontal flip as data augmentation
-        flip = np.random.choice(2)*2-1
+        flip = np.random.choice(2) * 2 - 1
         im = im[:, ::flip, :]
 
         # Load and prepare ground truth
@@ -150,12 +141,13 @@ def load_pascal_annotation(index, pascal_root):
     classes = ('__background__',  # always index 0
                'aeroplane', 'bicycle', 'bird', 'boat',
                'bottle', 'bus', 'car', 'cat', 'chair',
-                         'cow', 'diningtable', 'dog', 'horse',
-                         'motorbike', 'person', 'pottedplant',
-                         'sheep', 'sofa', 'train', 'tvmonitor')
+               'cow', 'diningtable', 'dog', 'horse',
+               'motorbike', 'person', 'pottedplant',
+               'sheep', 'sofa', 'train', 'tvmonitor')
     class_to_ind = dict(zip(classes, xrange(21)))
 
     filename = osp.join(pascal_root, 'Annotations', index + '.xml')
+
     # print 'Loading: {}'.format(filename)
 
     def get_data_from_tag(node, tag):
@@ -209,7 +201,8 @@ def print_info(name, params):
     """
     Output some info regarding the class
     """
-    print "{} initialized for split: {}, with bs: {}, im_shape: {}.".format(
+    print
+    "{} initialized for split: {}, with bs: {}, im_shape: {}.".format(
         name,
         params['split'],
         params['batch_size'],

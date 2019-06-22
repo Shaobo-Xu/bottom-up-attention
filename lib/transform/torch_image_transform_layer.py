@@ -21,8 +21,9 @@ layer {
 """
 
 import caffe
-from fast_rcnn.config import cfg
 import numpy as np
+from fast_rcnn.config import cfg
+
 
 class TorchImageTransformLayer(caffe.Layer):
     def setup(self, bottom, top):

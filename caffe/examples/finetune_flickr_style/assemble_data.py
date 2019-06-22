@@ -3,14 +3,15 @@
 Form a subset of the Flickr Style data, download images to dirname, and write
 Caffe ImagesDataLayer training file.
 """
+import argparse
+import hashlib
+import multiprocessing
 import os
 import urllib
-import hashlib
-import argparse
+
 import numpy as np
 import pandas as pd
 from skimage import io
-import multiprocessing
 
 # Flickr returns a special image if the request is unavailable.
 MISSING_IMAGE_SHA1 = '6a92790b1c2a301c6e7ddef645dca1f53ea97ac2'

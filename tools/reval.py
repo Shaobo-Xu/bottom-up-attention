@@ -9,13 +9,15 @@
 
 """Reval = re-eval. Re-evaluate saved detections."""
 
-import _init_paths
-from fast_rcnn.test import apply_nms
-from fast_rcnn.config import cfg
-from datasets.factory import get_imdb
+import argparse
+import os
+import sys
+
 import cPickle
-import os, sys, argparse
-import numpy as np
+from datasets.factory import get_imdb
+from fast_rcnn.config import cfg
+from fast_rcnn.test import apply_nms
+
 
 def parse_args():
     """
@@ -42,6 +44,7 @@ def parse_args():
     args = parser.parse_args()
     return args
 
+
 def from_dets(imdb_name, output_dir, args):
     imdb = get_imdb(imdb_name)
     imdb.competition_mode(args.comp_mode)
@@ -50,13 +53,16 @@ def from_dets(imdb_name, output_dir, args):
         dets = cPickle.load(f)
 
     if args.apply_nms:
-        print 'Applying NMS to all detections'
+        print
+        'Applying NMS to all detections'
         nms_dets = apply_nms(dets, cfg.TEST.NMS)
     else:
         nms_dets = dets
 
-    print 'Evaluating detections'
+    print
+    'Evaluating detections'
     imdb.evaluate_detections(nms_dets, output_dir)
+
 
 if __name__ == '__main__':
     args = parse_args()
